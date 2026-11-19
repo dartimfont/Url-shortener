@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"url-shortener/internal/config"
 	"url-shortener/internal/http-server/handlers/url/save"
 	"url-shortener/internal/lib/api"
 	"url-shortener/internal/lib/random"
@@ -13,14 +14,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	host = "localhost:8082"
-)
+var cfg = config.MustLoad()
 
 func TestURLShortener_HappyPath(t *testing.T) {
 	u := url.URL{
 		Scheme: "http",
-		Host:   host,
+		Host:   cfg.HTTPServer.Address,
 	}
 	e := httpexpect.Default(t, u.String())
 
@@ -29,7 +28,10 @@ func TestURLShortener_HappyPath(t *testing.T) {
 			URL:   gofakeit.URL(),
 			Alias: random.NewRandomString(10),
 		}).
-		WithBasicAuth("myuser", "mypass").
+		WithBasicAuth(
+			cfg.Auth.User,
+			cfg.Auth.Password,
+		).
 		Expect().
 		Status(200).
 		JSON().
@@ -67,7 +69,7 @@ func TestURLShortener_SaveRedirect(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			u := url.URL{
 				Scheme: "http",
-				Host:   host,
+				Host:   cfg.HTTPServer.Address,
 			}
 			e := httpexpect.Default(t, u.String())
 
@@ -77,7 +79,11 @@ func TestURLShortener_SaveRedirect(t *testing.T) {
 				WithJSON(save.Request{
 					URL:   tc.url,
 					Alias: tc.alias,
-				}).WithBasicAuth("myuser", "mypass").
+				}).
+				WithBasicAuth(
+					cfg.Auth.User,
+					cfg.Auth.Password,
+				).
 				Expect().Status(http.StatusOK).
 				JSON().Object()
 
@@ -109,7 +115,7 @@ func TestURLShortener_SaveRedirect(t *testing.T) {
 func testRedirect(t *testing.T, alias string, urlToRedirect string) {
 	u := url.URL{
 		Scheme: "http",
-		Host:   host,
+		Host:   cfg.HTTPServer.Address,
 		Path:   alias,
 	}
 

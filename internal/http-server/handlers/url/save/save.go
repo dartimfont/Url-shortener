@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
 
 	resp "url-shortener/internal/lib/api/response"
 	"url-shortener/internal/lib/logger/sl"
@@ -25,8 +27,7 @@ type Response struct {
 	Alias string `json:"alias,omitempty"`
 }
 
-// TODO: move to config
-const aliasLength = 6
+var aliasLength, _ = strconv.Atoi(os.Getenv("ALIAS_LENGTH"))
 
 //go:generate go run github.com/vektra/mockery/v2 --name=URLSaver
 type URLSaver interface {
