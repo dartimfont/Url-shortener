@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"url-shortener/internal/domain"
-	resp "url-shortener/internal/lib/api/response"
-	"url-shortener/internal/lib/logger/sl"
+	resp "url-shortener/internal/infra/api/response"
+	"url-shortener/internal/infra/logger/sl"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

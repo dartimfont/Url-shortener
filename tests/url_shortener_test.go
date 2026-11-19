@@ -6,7 +6,7 @@ import (
 	"testing"
 	"url-shortener/internal/config"
 	"url-shortener/internal/handlers/url/save"
-	"url-shortener/internal/lib/api"
+	"url-shortener/internal/infra/api"
 	"url-shortener/internal/lib/random"
 
 	"github.com/brianvoe/gofakeit/v7"

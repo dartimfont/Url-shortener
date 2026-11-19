@@ -14,8 +14,8 @@ import (
 	"url-shortener/internal/handlers/url/save"
 	"url-shortener/internal/handlers/url/update"
 	mwLogger "url-shortener/internal/http-server/middleware/logger"
-	"url-shortener/internal/lib/logger/handlers/slogpretty"
-	"url-shortener/internal/lib/logger/sl"
+	"url-shortener/internal/infra/logger/handlers/slogpretty"
+	"url-shortener/internal/infra/logger/sl"
 	"url-shortener/internal/service"
 	"url-shortener/internal/storage/postgres"
 )
@@ -33,7 +33,6 @@ func main() {
 	log.Info(
 		"starting url-shortener",
 		slog.String("env", cfg.Env),
-		slog.String("version", "123"),
 	)
 	log.Debug("debug messaged are enabled")
 
@@ -108,6 +107,5 @@ func setupPrettySlog() *slog.Logger {
 	}
 
 	handler := opts.NewPrettyHandler(os.Stdout)
-
 	return slog.New(handler)
 }

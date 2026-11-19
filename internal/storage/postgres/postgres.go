@@ -10,13 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type URLStorage interface {
-	SaveURL(urlToSave string, alias string) (int64, error)
-	GetURL(alias string) (string, error)
-	DeleteURL(alias string) (int64, error)
-	UpdateURL(alias string, newURL string) (int64, error)
-}
-
 type Storage struct {
 	db *pgxpool.Pool
 }
@@ -50,7 +43,6 @@ func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
 	err := s.db.QueryRow(
 		context.Background(),
 		`INSERT INTO url(alias, url) VALUES($1, $2)
-		 ON CONFLICT (alias) DO UPDATE SET url = EXCLUDED.url
 		 RETURNING id`,
 		alias,
 		urlToSave,

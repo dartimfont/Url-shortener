@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"url-shortener/internal/lib/random"
-	"url-shortener/internal/storage/postgres"
 )
 
 type URLStorage interface {
@@ -22,7 +21,7 @@ type URLService struct {
 
 var aliasLength, _ = strconv.Atoi(os.Getenv("ALIAS_LENGTH"))
 
-func NewURLService(storage postgres.URLStorage, log *slog.Logger) *URLService {
+func NewURLService(storage URLStorage, log *slog.Logger) *URLService {
 	return &URLService{
 		storage: storage,
 		log:     log,
