@@ -5,21 +5,21 @@ import (
 	"log/slog"
 	"net/http"
 
+	"url-shortener/internal/domain"
 	resp "url-shortener/internal/lib/api/response"
 	"url-shortener/internal/lib/logger/sl"
-	"url-shortener/internal/storage"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 )
 
-//go:generate go run github.com/vektra/mockery/v2 --name=URLGetter
-type URLGetter interface {
+//go:generate go run github.com/vektra/mockery/v2 --name=URLService
+type URLService interface {
 	GetURL(alias string) (string, error)
 }
 
-func New(log *slog.Logger, urlGetter URLGetter) http.HandlerFunc {
+func New(log *slog.Logger, urlService URLService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handlers.redirect.New"
 
@@ -31,26 +31,23 @@ func New(log *slog.Logger, urlGetter URLGetter) http.HandlerFunc {
 		alias := chi.URLParam(r, "alias")
 		if alias == "" {
 			log.Info("alias is empty")
-
+			render.Status(r, 400)
 			render.JSON(w, r, resp.Error("invalid request"))
-
 			return
 		}
 
-		resURL, err := urlGetter.GetURL(alias)
-		if errors.Is(err, storage.ErrURLNotFound) {
+		resURL, err := urlService.GetURL(alias)
+		if errors.Is(err, domain.ErrURLNotFound) {
 			log.Info("url not found", "alias", alias)
-
+			render.Status(r, 404)
 			render.JSON(w, r, resp.Error("not found"))
-
 			return
 		}
 
 		if err != nil {
 			log.Error("failed to get url", sl.Err(err))
-
+			render.Status(r, 500)
 			render.JSON(w, r, resp.Error("internal error"))
-
 			return
 		}
 

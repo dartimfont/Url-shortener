@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 	"url-shortener/internal/config"
-	"url-shortener/internal/http-server/handlers/url/save"
+	"url-shortener/internal/handlers/url/save"
 	"url-shortener/internal/lib/api"
 	"url-shortener/internal/lib/random"
 

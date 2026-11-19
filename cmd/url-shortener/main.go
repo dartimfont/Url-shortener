@@ -9,13 +9,14 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"url-shortener/internal/config"
-	"url-shortener/internal/http-server/handlers/redirect"
-	"url-shortener/internal/http-server/handlers/url/delete"
-	"url-shortener/internal/http-server/handlers/url/save"
-	"url-shortener/internal/http-server/handlers/url/update"
+	"url-shortener/internal/handlers/url/delete"
+	"url-shortener/internal/handlers/url/redirect"
+	"url-shortener/internal/handlers/url/save"
+	"url-shortener/internal/handlers/url/update"
 	mwLogger "url-shortener/internal/http-server/middleware/logger"
 	"url-shortener/internal/lib/logger/handlers/slogpretty"
 	"url-shortener/internal/lib/logger/sl"
+	"url-shortener/internal/service"
 	"url-shortener/internal/storage/postgres"
 )
 
@@ -43,6 +44,8 @@ func main() {
 	}
 	defer storage.Close()
 
+	urlService := service.NewURLService(storage, log)
+
 	// Init router
 	router := chi.NewRouter()
 
@@ -58,12 +61,12 @@ func main() {
 			cfg.Auth.User: cfg.Auth.Password,
 		}))
 
-		r.Post("/", save.New(log, storage))
-		r.Put("/", update.New(log, storage))
-		r.Delete("/{alias}", delete.New(log, storage))
+		r.Post("/", save.New(log, urlService))
+		r.Put("/", update.New(log, urlService))
+		r.Delete("/{alias}", delete.New(log, urlService))
 	})
 
-	router.Get("/{alias}", redirect.New(log, storage))
+	router.Get("/{alias}", redirect.New(log, urlService))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 

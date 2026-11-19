@@ -3,8 +3,9 @@ package redirect_test
 import (
 	"net/http/httptest"
 	"testing"
-	"url-shortener/internal/http-server/handlers/redirect"
-	"url-shortener/internal/http-server/handlers/redirect/mocks"
+
+	"url-shortener/internal/handlers/url/redirect"
+	"url-shortener/internal/handlers/url/redirect/mocks"
 	"url-shortener/internal/lib/api"
 	"url-shortener/internal/lib/logger/handlers/slogdiscard"
 
@@ -30,7 +31,7 @@ func TestSaveHandler(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			urlGetterMock := mocks.NewURLGetter(t)
+			urlGetterMock := mocks.NewURLService(t)
 
 			if tc.respError == "" || tc.mockError != nil {
 				urlGetterMock.On("GetURL", tc.alias).

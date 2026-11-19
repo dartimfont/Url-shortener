@@ -4,8 +4,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"url-shortener/internal/domain"
 	resp "url-shortener/internal/lib/api/response"
-	"url-shortener/internal/storage"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -17,12 +17,12 @@ type Response struct {
 	CountDeleted int64 `json:"countDeleted"`
 }
 
-//go:generate go run github.com/vektra/mockery/v2 --name=DeleteURL
-type DeleteURL interface {
+//go:generate go run github.com/vektra/mockery/v2 --name=URLService
+type URLService interface {
 	DeleteURL(alias string) (int64, error)
 }
 
-func New(log *slog.Logger, deleteURL DeleteURL) http.HandlerFunc {
+func New(log *slog.Logger, urlService URLService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handlers.url.delete.New"
 
@@ -34,29 +34,33 @@ func New(log *slog.Logger, deleteURL DeleteURL) http.HandlerFunc {
 		alias := chi.URLParam(r, "alias")
 		if alias == "" {
 			log.Error("empty alias")
+			render.Status(r, 400)
 			render.JSON(w, r, resp.Error("invalid request"))
 			return
 		}
 
-		countDeleted, err := deleteURL.DeleteURL(alias)
-		if errors.Is(err, storage.ErrURLNotFound) {
+		countDeleted, err := urlService.DeleteURL(alias)
+		if errors.Is(err, domain.ErrURLNotFound) {
 			log.Info("url not found", "alias", alias)
-			render.JSON(w, r, resp.Error("internal error"))
+			render.Status(r, 404)
+			render.JSON(w, r, resp.Error("url not fount"))
 			return
 		}
 		if err != nil {
-			log.Error("failed to get url", "alias", alias)
+			log.Error("failed to delete url", "alias", alias)
+			render.Status(r, 500)
 			render.JSON(w, r, resp.Error("internal error"))
 			return
 		}
 
 		log.Info("deleted url", slog.String("alias", alias), slog.Int64("count_deleted", countDeleted))
 
-		responseOK(w, r, countDeleted)
+		responseOK(w, r, countDeleted, 200)
 	}
 }
 
-func responseOK(w http.ResponseWriter, r *http.Request, countDeleted int64) {
+func responseOK(w http.ResponseWriter, r *http.Request, countDeleted int64, status int) {
+	render.Status(r, status)
 	render.JSON(w, r, Response{
 		Response:     resp.OK(),
 		CountDeleted: countDeleted,

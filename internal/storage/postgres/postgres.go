@@ -4,11 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"url-shortener/internal/storage"
+	"url-shortener/internal/domain"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type URLStorage interface {
+	SaveURL(urlToSave string, alias string) (int64, error)
+	GetURL(alias string) (string, error)
+	DeleteURL(alias string) (int64, error)
+	UpdateURL(alias string, newURL string) (int64, error)
+}
 
 type Storage struct {
 	db *pgxpool.Pool
@@ -65,7 +72,7 @@ func (s *Storage) GetURL(alias string) (string, error) {
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", storage.ErrURLNotFound
+			return "", domain.ErrURLNotFound
 		}
 
 		return "", fmt.Errorf("%s: %w", fn, err)

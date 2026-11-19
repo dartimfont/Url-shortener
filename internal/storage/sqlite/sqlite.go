@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"url-shortener/internal/storage"
+	"url-shortener/internal/domain"
 
 	"github.com/mattn/go-sqlite3"
 )
@@ -51,7 +51,7 @@ func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
 	res, err := stmt.Exec(urlToSave, alias)
 	if err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
-			return 0, fmt.Errorf("%s: %w", fn, storage.ErrURLExists)
+			return 0, fmt.Errorf("%s: %w", fn, domain.ErrURLExists)
 		}
 
 		return 0, fmt.Errorf("%s: %w", fn, err)
@@ -77,7 +77,7 @@ func (s *Storage) GetURL(alias string) (string, error) {
 	err = stmt.QueryRow(alias).Scan(&resURL)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", storage.ErrURLNotFound
+			return "", domain.ErrURLNotFound
 		}
 
 		return "", fmt.Errorf("%s: %w", fn, err)

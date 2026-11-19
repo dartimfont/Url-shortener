@@ -4,9 +4,9 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"url-shortener/internal/domain"
 	resp "url-shortener/internal/lib/api/response"
 	"url-shortener/internal/lib/logger/sl"
-	"url-shortener/internal/storage"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -23,12 +23,12 @@ type Response struct {
 	CountUpdated int64 `json:"countUpdated"`
 }
 
-//go:generate go run github.com/vektra/mockery/v2 --name=UpdateURL
-type UpdateURL interface {
+//go:generate go run github.com/vektra/mockery/v2 --name=URLService
+type URLService interface {
 	UpdateURL(alias string, newURL string) (int64, error)
 }
 
-func New(log *slog.Logger, updateURL UpdateURL) http.HandlerFunc {
+func New(log *slog.Logger, urlService URLService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handlers.url.update.New"
 
@@ -41,6 +41,7 @@ func New(log *slog.Logger, updateURL UpdateURL) http.HandlerFunc {
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
 			log.Error("failed to decode request body", sl.Err(err))
+			render.Status(r, 400)
 			render.JSON(w, r, resp.Error("failed to decode request body"))
 			return
 		}
@@ -50,6 +51,7 @@ func New(log *slog.Logger, updateURL UpdateURL) http.HandlerFunc {
 		if err := validator.New().Struct(req); err != nil {
 			validateErr := err.(validator.ValidationErrors)
 			log.Error("invalid request", sl.Err(err))
+			render.Status(r, 400)
 			render.JSON(w, r, resp.ValidationError(validateErr))
 			return
 		}
@@ -57,26 +59,29 @@ func New(log *slog.Logger, updateURL UpdateURL) http.HandlerFunc {
 		alias := req.Alias
 		newUrl := req.NewURL
 
-		CountUpdated, err := updateURL.UpdateURL(alias, newUrl)
-		if errors.Is(err, storage.ErrURLNotFound) {
+		CountUpdated, err := urlService.UpdateURL(alias, newUrl)
+		if errors.Is(err, domain.ErrURLNotFound) {
 			log.Info("url not found", "alias", alias)
+			render.Status(r, 404)
 			render.JSON(w, r, resp.Error("url not found"))
 			return
 		}
 
 		if err != nil {
 			log.Error("failed to update url", "alias", alias)
+			render.Status(r, 500)
 			render.JSON(w, r, resp.Error("failed to update url"))
 			return
 		}
 
-		log.Info("url updated", slog.String("alias", alias), slog.Int64("count_deleted", CountUpdated))
+		log.Info("url updated", slog.String("alias", alias), slog.Int64("count_updated", CountUpdated))
 
-		responseOK(w, r, CountUpdated)
+		responseOK(w, r, CountUpdated, 200)
 	}
 }
 
-func responseOK(w http.ResponseWriter, r *http.Request, countUpdated int64) {
+func responseOK(w http.ResponseWriter, r *http.Request, countUpdated int64, status int) {
+	render.Status(r, status)
 	render.JSON(w, r, Response{
 		Response:     resp.OK(),
 		CountUpdated: countUpdated,
